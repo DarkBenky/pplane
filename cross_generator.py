@@ -9,13 +9,18 @@ TIP_RADIUS = 63.25
 TIP_WIDTH = 2.324
 ROOT_WIDTH = 8.0
 ARM_START = -2.0
-HOLE_CENTER_RADIUS = 19.5
+HOLE_SPAN = 39.0
+CHAMFER_RADIUS = 2.4
+HOLE_CENTER_RADIUS = HOLE_SPAN / 2.0 + CHAMFER_RADIUS
 HOLE_DIAMETER = 4.0
 HOLE_DEPTH = 7.5
-CHAMFER_RADIUS = 2.4
 CHAMFER_DEPTH = 0.5
 RING_RADIUS = 34.0
-RING_THICKNESS = 1.2
+RING_RADIAL_HALF = 2.0
+RING_AXIAL_HALF = 4.0
+WEB_THICKNESS = 0.8
+FOOT_EXTRA = 2.0
+FOOT_HEIGHT = 2.0
 CORNER_RADIUS = 1.0
 OUT_DIR = Path(__file__).resolve().parent
 ASSEMBLY_OFFSET = np.array([0.0, -1.6201, 54.8102])
@@ -84,12 +89,84 @@ def make_arm(theta):
     return mesh
 
 
+def revolve_profile(profile, sections=192):
+    profile = np.array(profile)
+    point_count = len(profile)
+    vertices = []
+    faces = []
+    for index in range(sections):
+        angle = 2.0 * np.pi * index / sections
+        for radius, height in profile:
+            vertices.append([radius * np.cos(angle), radius * np.sin(angle), height])
+    for index in range(sections):
+        next_index = (index + 1) % sections
+        for point in range(point_count):
+            next_point = (point + 1) % point_count
+            a = index * point_count + point
+            b = index * point_count + next_point
+            c = next_index * point_count + point
+            d = next_index * point_count + next_point
+            faces.append([a, b, d])
+            faces.append([a, d, c])
+    mesh = trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=True)
+    mesh.fix_normals()
+    if mesh.volume < 0.0:
+        mesh.invert()
+    return mesh
+
+
 def make_ring():
-    outer_radius = RING_RADIUS + RING_THICKNESS / 2.0
-    inner_radius = RING_RADIUS - RING_THICKNESS / 2.0
-    outer = trimesh.creation.cylinder(radius=outer_radius, height=ARM_HEIGHT, sections=192)
-    inner = trimesh.creation.cylinder(radius=inner_radius, height=ARM_HEIGHT + 2.0, sections=192)
-    mesh = trimesh.boolean.difference([outer, inner], engine="manifold")
+    profile = np.array([
+        [RING_RADIUS + RING_RADIAL_HALF, 0.0],
+        [RING_RADIUS, RING_AXIAL_HALF],
+        [RING_RADIUS - RING_RADIAL_HALF, 0.0],
+        [RING_RADIUS, -RING_AXIAL_HALF],
+    ])
+    points = []
+    for index in range(4):
+        start = profile[index]
+        end = profile[(index + 1) % 4]
+        for value in np.linspace(0.0, 1.0, 8, endpoint=False):
+            points.append(start + (end - start) * value)
+    points = np.array(points)
+    point_count = len(points)
+    angle_count = 192
+    vertices = []
+    faces = []
+    for angle_index in range(angle_count):
+        angle = 2.0 * np.pi * angle_index / angle_count
+        for radius, height in points:
+            vertices.append([radius * np.cos(angle), radius * np.sin(angle), height])
+    for angle_index in range(angle_count):
+        next_angle = (angle_index + 1) % angle_count
+        for point_index in range(point_count):
+            next_point = (point_index + 1) % point_count
+            a = angle_index * point_count + point_index
+            b = angle_index * point_count + next_point
+            c = next_angle * point_count + point_index
+            d = next_angle * point_count + next_point
+            faces.append([a, b, d])
+            faces.append([a, d, c])
+    ring = trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=True)
+    ring.fix_normals()
+    if ring.volume < 0.0:
+        ring.invert()
+    outer_radius = RING_RADIUS + WEB_THICKNESS / 2.0
+    inner_radius = RING_RADIUS - WEB_THICKNESS / 2.0
+    z_bottom = -ARM_HEIGHT / 2.0
+    z_base_top = z_bottom + FOOT_HEIGHT
+    bottom_outer = outer_radius + FOOT_EXTRA
+    bottom_inner = inner_radius - FOOT_EXTRA
+    outer_fillet = [(outer_radius + FOOT_HEIGHT * np.cos(angle), z_bottom + FOOT_HEIGHT * np.sin(angle)) for angle in np.linspace(0.0, np.pi / 2.0, 12)]
+    base_profile = [(bottom_outer, z_bottom)] + outer_fillet[1:] + [(inner_radius, z_base_top), (bottom_inner, z_bottom)]
+    base = revolve_profile(base_profile)
+    web_top = -RING_AXIAL_HALF + 1.0
+    web_height = web_top - z_base_top
+    web_outer = trimesh.creation.cylinder(radius=outer_radius, height=web_height, sections=192)
+    web_inner = trimesh.creation.cylinder(radius=inner_radius, height=web_height + 2.0, sections=192)
+    web = trimesh.boolean.difference([web_outer, web_inner], engine="manifold")
+    web.apply_translation([0.0, 0.0, (z_base_top + web_top) / 2.0])
+    mesh = trimesh.boolean.union([ring, web, base], engine="manifold")
     mesh.fix_normals()
     if mesh.volume < 0.0:
         mesh.invert()
