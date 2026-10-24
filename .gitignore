@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Blender's rolling save backup (the tracked .blend1 is kept intentionally)
+*.blend2
+*.blend@

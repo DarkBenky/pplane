@@ -3,11 +3,11 @@ import trimesh
 from pathlib import Path
 from trimesh.creation import box
 
-BASE_DIR = Path(__file__).resolve().parent
-MALE_SOURCE = BASE_DIR / "male-cover.stl"
-FEMALE_SOURCE = BASE_DIR / "female-cover.stl"
-MALE_OUTPUT = BASE_DIR / "male-cover-fixed.stl"
-FEMALE_OUTPUT = BASE_DIR / "female-cover-fixed.stl"
+COVER_DIR = Path(__file__).resolve().parent.parent / "models" / "covers"
+MALE_SOURCE = COVER_DIR / "male-cover.stl"
+FEMALE_SOURCE = COVER_DIR / "female-cover.stl"
+MALE_OUTPUT = COVER_DIR / "male-cover-fixed.stl"
+FEMALE_OUTPUT = COVER_DIR / "female-cover-fixed.stl"
 
 PIN_SIZE = 2.4
 SOCKET_SIZE = 2.6

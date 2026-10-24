@@ -22,7 +22,7 @@ WEB_THICKNESS = 0.8
 FOOT_EXTRA = 2.0
 FOOT_HEIGHT = 2.0
 CORNER_RADIUS = 1.0
-OUT_DIR = Path(__file__).resolve().parent
+OUT_DIR = Path(__file__).resolve().parent.parent / "models" / "cross"
 ASSEMBLY_OFFSET = np.array([0.0, -1.6201, 54.8102])
 
 WIDTH_KNOTS_R = np.array([0, 8, 14, 16, 23.5, 25, 30, 34, 38, 45, 55, 61, TIP_RADIUS])
@@ -221,6 +221,7 @@ def main():
         cross = trimesh.boolean.difference([cross, make_hole_drill(x, y)], engine="manifold")
     if not cross.is_watertight:
         raise RuntimeError("generated mesh is not watertight")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     centered_path = OUT_DIR / "cross_v2.stl"
     assembly_path = OUT_DIR / "cross_v2_assembly.stl"
     cross.export(centered_path)
