@@ -6,11 +6,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 OUT_DIR = BASE_DIR / "models" / "hardware"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-INSERT_BODY_D = 4.6
-INSERT_BODY_L = 5.2
-INSERT_FLANGE_D = 5.6
-INSERT_FLANGE_L = 0.5
-INSERT_BORE_D = 2.5
+INSERT_BODY_D = 3.95
+INSERT_BODY_L = 5.92
+INSERT_BORE_D = 2.4
+INSERT_CHAMFER_OUTER = 0.3
+INSERT_CHAMFER_INNER = 0.2
 
 SCREW_HEAD_D = 5.5
 SCREW_HEAD_L = 3.0
@@ -90,13 +90,48 @@ def helix_tube(path_radius, tube_radius, pitch, height, section_steps=8, steps_p
     return mesh
 
 
-def make_insert():
-    body = cyl(INSERT_BODY_D / 2.0, INSERT_BODY_L, INSERT_BODY_L / 2.0, sections=24)
-    flange = cyl(INSERT_FLANGE_D / 2.0, INSERT_FLANGE_L, INSERT_BODY_L + INSERT_FLANGE_L / 2.0, sections=48)
-    mesh = trimesh.boolean.union([body, flange], engine="manifold")
-    bore = cyl(INSERT_BORE_D / 2.0, INSERT_BODY_L + INSERT_FLANGE_L + 2.0, (INSERT_BODY_L + INSERT_FLANGE_L) / 2.0, sections=48)
-    mesh = trimesh.boolean.difference([mesh, bore], engine="manifold")
+def revolve_profile(profile, radius_modifier=None, sections=96):
+    profile = np.asarray(profile, dtype=float)
+    count = len(profile)
+    angles = np.linspace(0.0, 2.0 * np.pi, sections, endpoint=False)
+    vertices = []
+    for theta in angles:
+        for radius, z in profile:
+            radius = radius_modifier(radius, theta) if radius_modifier else radius
+            vertices.append([radius * np.cos(theta), radius * np.sin(theta), z])
+    faces = []
+    for j in range(sections):
+        j_next = (j + 1) % sections
+        for i in range(count):
+            i_next = (i + 1) % count
+            a = j * count + i
+            b = j * count + i_next
+            c = j_next * count + i
+            d = j_next * count + i_next
+            faces.append([a, b, d])
+            faces.append([a, d, c])
+    mesh = trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=True)
+    mesh.fix_normals()
+    if mesh.volume < 0.0:
+        mesh.invert()
     return mesh
+
+
+def make_insert():
+    outer = INSERT_BODY_D / 2.0
+    inner = INSERT_BORE_D / 2.0
+    height = INSERT_BODY_L
+    profile = [
+        (inner, INSERT_CHAMFER_INNER),
+        (inner + INSERT_CHAMFER_INNER, 0.0),
+        (outer - INSERT_CHAMFER_OUTER, 0.0),
+        (outer, INSERT_CHAMFER_OUTER),
+        (outer, height - INSERT_CHAMFER_OUTER),
+        (outer - INSERT_CHAMFER_OUTER, height),
+        (inner + INSERT_CHAMFER_INNER, height),
+        (inner, height - INSERT_CHAMFER_INNER),
+    ]
+    return revolve_profile(profile)
 
 
 def make_screw():
