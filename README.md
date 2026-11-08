@@ -14,9 +14,12 @@ models/
   hardware/ m3_heat_insert.stl, m3_screw_10mm.stl, m3_hex_nut.stl, m3_washer.stl
   test-stand/ motor_test_stand_base.stl, motor_test_stand_lid.stl
   battery/  lead_acid_12v_7.2ah.stl, lipo_6s_113x43x37.stl
+  reference/ build_volume_256.stl, build_volume_256_frame.stl
+  boat/     bow/stern foam-fill caps (+ existing boat parts)
 scripts/    cross_generator.py, fix_cover_pins.py, tube_generator.py,
             hardware_generator.py, test_stand_generator.py, battery_generator.py,
-            lipo_battery_generator.py
+            lipo_battery_generator.py, build_volume_generator.py,
+            boat_end_cap_generator.py
 backups/    pre-edit copies of the models above (not printed)
 prints/     sliced gcode, PLA
 cad/        engine.blend — Blender assembly / inspection scene
@@ -37,6 +40,8 @@ Python: `/home/user/miniconda3/bin/python` (needs `numpy`, `scipy`, `trimesh`, `
 | `scripts/test_stand_generator.py` | – | `models/test-stand/motor_test_stand_*.stl` |
 | `scripts/battery_generator.py` | – | `models/battery/lead_acid_12v_7.2ah.stl` |
 | `scripts/lipo_battery_generator.py` | – | `models/battery/lipo_6s_113x43x37.stl` |
+| `scripts/build_volume_generator.py` | – | `models/reference/build_volume_256*.stl` |
+| `scripts/boat_end_cap_generator.py` | – | `models/boat/boat_bow_stern_cap_*.stl` |
 
 `fix_cover_pins.py` is **not idempotent** — run it on the *original* covers only
 (the `-fixed` files already in the repo are the result; running it again adds the
@@ -105,6 +110,20 @@ align and seal the lid. Four Ø3.4 through-holes with Ø6 × 3 mm counterbores a
 r 75. Base ≈164 g PLA, lid ≈143 g PLA; ≈1.02 kg with sand. Motor screws
 M3 × 8; base screws M3 × 10.
 
+**Build volume (`models/reference/`)** — 256 × 256 × 256 mm envelope for a
+256 mm-class printer. `build_volume_256.stl` is the solid cube;
+`build_volume_256_frame.stl` is a 12-edge cage with 3 mm square beams inside the
+same envelope (250 mm clear inside the beams). Both are centred on X/Y and sit
+on Z=0, so their bounds are X/Y −128…+128 mm and Z 0…256 mm.
+
+**Boat end caps (`models/boat/`)** — foam-fill bow/stern caps. 3 mm skin
+sitting 4 mm outside the original hull, 1 mm clearance to the inside liner,
+open inboard end, tapered outboard nose, Ø24 fill + Ø8 vent per half, and a
+1.2 mm recessed deck panel. Printable port/starboard halves are ≈240 × 193 ×
+194 mm and fit the 256 mm build cube; the full cap is ≈240 × 386 × 194 mm.
+Use the same pair at bow and stern and rotate 180° for the stern. Details in
+`models/boat/README.md`.
+
 ## Printing notes
 
 * Duct parts: print the tube **upside down** (flat top face on the bed); the seat
@@ -117,5 +136,5 @@ M3 × 8; base screws M3 × 10.
   screwing the lid down. A plastic bag liner keeps sand contained and dry.
 * Fan blades are thin (median ~0.8 mm, some edges ~0.3 mm). SLM in AlSi10Mg is
   risky at that wall thickness — MJF/SLS PA12 or SLA works better.
-* Battery STLs are reference envelopes for holder design, not functional
-  batteries to print.
+* Battery and build-volume STLs are reference envelopes for holder/part design,
+  not functional objects to print.
