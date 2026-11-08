@@ -116,13 +116,16 @@ M3 × 8; base screws M3 × 10.
 same envelope (250 mm clear inside the beams). Both are centred on X/Y and sit
 on Z=0, so their bounds are X/Y −128…+128 mm and Z 0…256 mm.
 
-**Boat end caps (`models/boat/`)** — foam-fill bow/stern caps. 3 mm skin
-sitting 4 mm outside the original hull, 1 mm clearance to the inside liner,
-open inboard end, tapered outboard nose, Ø24 fill + Ø8 vent per half, and a
-1.2 mm recessed deck panel. Printable port/starboard halves are ≈240 × 193 ×
-194 mm and fit the 256 mm build cube; the full cap is ≈240 × 386 × 194 mm.
-Use the same pair at bow and stern and rotate 180° for the stern. Details in
-`models/boat/README.md`.
+**Boat end caps (`models/boat/`)** — foam-fill bow/stern caps. 1.5 mm skin,
+2.5…3 mm outside the original hull, with the hull's flat-pad/V front section
+(188 mm half-width, pads at y 60…133 / z 145, keel at z 108) and 1.5 mm
+clearance to the inside liner. The cap starts at x = 255 over the front of the
+liner and runs to x = 500, with a straight plan taper from x = 340 to a 0.5 %
+tip, a 70 mm keel rocker and a solid tip raked back 15 mm at the bottom. Open
+inboard end; Ø24 fill + Ø8 vent per half; no deck recess. Printable
+port/starboard halves are 245 × 192.25 × 198 mm and fit the 256 mm build cube;
+the full cap is 245 × 384.5 × 198 mm. Use the same pair at bow and stern and
+rotate 180° for the stern. Details in `models/boat/README.md`.
 
 ## Printing notes
 

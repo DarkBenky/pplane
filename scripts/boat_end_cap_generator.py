@@ -8,40 +8,66 @@ OUT_DIR = BASE_DIR / "models" / "boat"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TOP_Z = 300.0
-KEEL_Z = 114.0
+KEEL_Z = 108.0
 CHINE_Z = 145.0
 TOP_Y = 188.0
-CHINE_Y = 145.0
+CHINE_Y = 133.0
+FLAT_Y = 60.0
 
-X_INBOARD = 110.0
-X_OUTBOARD = 350.0
-X_CAVITY_END = 345.0
-TAPER_START = 335.0
-TAPER_END_SCALE = 0.55
+X_INBOARD = 255.0
+X_OUTBOARD = 500.0
+X_STEM_START = 480.0
+TAPER_START = 340.0
+NOSE_TIP_SCALE = 0.005
+RAKE_STEM = 15.0
+JOINT_END = 280.0
+JOINT_SKIN = 2.5
 
-SKIN = 4.0
-CLEARANCE = 1.0
-RECESS_X0, RECESS_X1 = 190.0, 270.0
-RECESS_Y = 125.0
-RECESS_DEPTH = 1.2
+# The inside liner ends at x = 340.  The cap starts well inboard of that,
+# covers the front 85 mm of the liner, and carries the bow forward to x = 500.
+ROCKER_START = 340.0
+ROCKER_HEIGHT = 70.0
+
+SKIN = 3.0
+CLEARANCE = 1.5
 FILL_HOLE_D = 24.0
 VENT_HOLE_D = 8.0
-FILL_HOLE_X = 150.0
-VENT_HOLE_X = 300.0
+FILL_HOLE_X = 300.0
+VENT_HOLE_X = 390.0
 FILL_HOLE_Y = 90.0
-VENT_HOLE_Y = 80.0
+VENT_HOLE_Y = 50.0
 
 
 def scale_at(x):
     if x <= TAPER_START:
         return 1.0
     t = min(max((x - TAPER_START) / (X_OUTBOARD - TAPER_START), 0.0), 1.0)
-    return 1.0 + (TAPER_END_SCALE - 1.0) * t
+    return 1.0 - (1.0 - NOSE_TIP_SCALE) * t
+
+
+def rocker_at(x):
+    if x <= ROCKER_START:
+        return 0.0
+    return ROCKER_HEIGHT * smoothstep((x - ROCKER_START) / (X_OUTBOARD - ROCKER_START))
+
+
+def smoothstep(t):
+    t = min(max(t, 0.0), 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def skin_at(x):
+    return JOINT_SKIN + (SKIN - JOINT_SKIN) * smoothstep((x - X_INBOARD) / (JOINT_END - X_INBOARD))
+
+
+def clearance_at(x):
+    return CLEARANCE
 
 
 def base_profile(x):
     s = scale_at(x)
-    return [(-TOP_Y * s, TOP_Z), (TOP_Y * s, TOP_Z), (CHINE_Y * s, CHINE_Z), (0.0, KEEL_Z), (-CHINE_Y * s, CHINE_Z)]
+    dz = rocker_at(x)
+    return [(-TOP_Y * s, TOP_Z), (TOP_Y * s, TOP_Z), (CHINE_Y * s, CHINE_Z + dz), (FLAT_Y * s, CHINE_Z + dz), (0.0, KEEL_Z + dz), (-FLAT_Y * s, CHINE_Z + dz), (-CHINE_Y * s, CHINE_Z + dz)]
 
 
 def signed_area(points):
@@ -117,30 +143,48 @@ def cyl_z(radius, height, x, y, z, sections=64):
 
 
 def make_full_cap():
-    xs_outer = [110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0,
-                210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0,
-                310.0, 320.0, 330.0, 335.0, 340.0, 345.0, 350.0]
-    xs_cavity = [109.0] + [x for x in xs_outer if x <= X_CAVITY_END]
-    outer = [offset_polygon(base_profile(x), SKIN) for x in xs_outer]
-    inner = [offset_polygon(base_profile(x), CLEARANCE) for x in xs_cavity]
-    outer_mesh = loft(outer, xs_outer)
-    inner_mesh = loft(inner, xs_cavity)
-    cap = trimesh.boolean.difference([outer_mesh, inner_mesh], engine="manifold")
+    # 2 mm stations; 255 ... 480, followed by a solid tip to 500.  The cavity
+    # starts 1 mm inboard of the cap so the existing liner can slide inside it.
+    xs_shell = [X_INBOARD + 2.0 * i for i in range(108)] + [X_STEM_START]
+    xs_cavity = [X_INBOARD - 1.0] + xs_shell
+    outer = [offset_polygon(base_profile(x), skin_at(x)) for x in xs_shell]
+    inner = [offset_polygon(base_profile(x), clearance_at(x)) for x in xs_cavity]
+    for x, profile in zip(xs_shell, outer):
+        profile[4] = (0.0, KEEL_Z + rocker_at(x) - skin_at(x))
+    for x, profile in zip(xs_cavity, inner):
+        profile[4] = (0.0, KEEL_Z + rocker_at(x) - clearance_at(x))
+    shell = trimesh.boolean.difference([loft(outer, xs_shell), loft(inner, xs_cavity)], engine="manifold")
+
+    # Fine solid tip closing the last 10 mm of the continuous taper.
+    nose_section = outer[-1]
+    xs_nose = [X_STEM_START + i for i in range(21)]
+    nose_profiles = []
+    for x in xs_nose:
+        t = (x - X_STEM_START) / (X_OUTBOARD - X_STEM_START)
+        factor = 1.0 - (1.0 - NOSE_TIP_SCALE) * t
+        nose_profiles.append([(y * factor, z) for y, z in nose_section])
+    nose = loft(nose_profiles, xs_nose)
+    top = TOP_Z + SKIN
+    bottom = KEEL_Z + rocker_at(X_STEM_START) - SKIN
+    vertices = nose.vertices.copy()
+    t = np.clip((vertices[:, 0] - X_STEM_START) / (X_OUTBOARD - X_STEM_START), 0.0, 1.0)
+    zfrac = (top - vertices[:, 2]) / (top - bottom)
+    vertices[:, 0] = X_STEM_START + (X_OUTBOARD - X_STEM_START) * t * (1.0 - (RAKE_STEM / (X_OUTBOARD - X_STEM_START)) * zfrac)
+    nose = trimesh.Trimesh(vertices=vertices, faces=nose.faces, process=True)
+    nose.fix_normals()
+    cap = trimesh.boolean.union([shell, nose], engine="manifold")
 
     cuts = []
     for y in (-FILL_HOLE_Y, FILL_HOLE_Y):
         cuts.append(cyl_z(FILL_HOLE_D / 2.0, 12.0, FILL_HOLE_X, y, TOP_Z + SKIN - 1.0, 64))
     for y in (-VENT_HOLE_Y, VENT_HOLE_Y):
         cuts.append(cyl_z(VENT_HOLE_D / 2.0, 12.0, VENT_HOLE_X, y, TOP_Z + SKIN - 1.0, 48))
-    recess = box_at([RECESS_X1 - RECESS_X0, 2.0 * RECESS_Y, RECESS_DEPTH + 1.0],
-                    [(RECESS_X0 + RECESS_X1) / 2.0, 0.0, TOP_Z + SKIN + 0.5 - (RECESS_DEPTH + 1.0) / 2.0])
-    cuts.append(recess)
     cap = trimesh.boolean.difference([cap] + cuts, engine="manifold")
     return cap
 
 
 def split_half(cap, sign):
-    cutter = box_at([460.0, 340.0, 420.0], [230.0, sign * 170.0, 210.0])
+    cutter = box_at([400.0, 340.0, 420.0], [380.0, sign * 170.0, 210.0])
     half = trimesh.boolean.intersection([cap, cutter], engine="manifold")
     half.fix_normals()
     if half.volume < 0:
@@ -171,8 +215,12 @@ def main():
     export(cap, "boat_bow_stern_cap_full.stl")
     port = split_half(cap, 1.0)
     export(port, "boat_bow_stern_cap_port.stl")
-    export(mirror_y(port), "boat_bow_stern_cap_starboard.stl")
-    print("3 mm skin (4 mm outside the old hull, 1 mm liner clearance), open inboard end for foam; same cap at bow and stern.")
+    starboard = mirror_y(port)
+    starboard.merge_vertices()
+    trimesh.repair.fill_holes(starboard)
+    trimesh.repair.fix_normals(starboard)
+    export(starboard, "boat_bow_stern_cap_starboard.stl")
+    print("1.5 mm skin, flat-pad/V hull section, straight sharp taper to a fine raked tip, open inboard end for foam; same cap at both ends.")
     print("Port/starboard halves fit a 256 mm printer. Rotate 180 deg for the stern.")
 
 
