@@ -42,6 +42,7 @@ Python: `/home/user/miniconda3/bin/python` (needs `numpy`, `scipy`, `trimesh`, `
 | `scripts/lipo_battery_generator.py` | – | `models/battery/lipo_6s_113x43x37.stl` |
 | `scripts/build_volume_generator.py` | – | `models/reference/build_volume_256*.stl` |
 | `scripts/boat_end_cap_generator.py` | – | `models/boat/boat_bow_stern_cap_*.stl` |
+| `scripts/boat_inside_split_generator.py` | `models/boat/boatinside*.stl` | `models/boat/*_optimized.stl`, `models/boat/legs_inside/*.stl` |
 
 `fix_cover_pins.py` is **not idempotent** — run it on the *original* covers only
 (the `-fixed` files already in the repo are the result; running it again adds the
@@ -122,6 +123,15 @@ face of the boat: no side walls, sleeve, or added nose. Printable
 port/starboard halves are 2 × 188.48 × 186.06 mm and fit the 256 mm build cube
 easily; the full plate is 2 × 375.19 × 186.06 mm. Use the same pair at bow and
 stern and rotate 180° for the stern. Details in `models/boat/README.md`.
+
+**Optimized boat benches (`models/boat/`)** — `boatinside_optimized.stl`,
+`boatinside2_optimized.stl`, `boatinside_hole_optimized.stl` and
+`boatinside_hole2_optimized.stl` are the bench bodies with all lower supports
+removed. The separate leg pieces are in `models/boat/legs_inside/` (two leg
+frames for the regular benches, three pieces for each hole bench). Each body
+has 0.2 mm deep alignment pockets with 0.5 mm clearance; matching keys and 1–4
+dot codes identify the positions. Print the long leg pieces on their sides.
+Details in `models/boat/README.md`.
 
 ## Printing notes
 
