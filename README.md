@@ -58,8 +58,11 @@ Bottom opening stays 12.8 mm. Watertight, ~84k triangles.
 **Cross (`cross_v2.stl`)** — arms 25.87 mm high, tip radius 63.25 mm,
 M3 heat-insert holes Ø4.0 × 7.5 mm with Ø4.8 chamfer; **hole span 39.0 mm**
 (clear gap between chamfer rims), hole centres at r 21.9 mm.
+**Ø7.5 mm through-hole** in the centre (5 mm shaft + clearance), reinforced by a
+**Ø18 mm hub** spanning the full arm height (5.25 mm wall around the hole; the hub
+top is flush with the motor mounting face).
 Mid-height diamond ring at r 34 mm with a 0.8 mm web down to a 2 mm bell-mouth base
-(support-free print). 36.8 cm³ ≈ 45.6 g PLA.
+(support-free print). 37.2 cm³ ≈ 46.2 g PLA.
 
 **Covers (`male-cover.stl` / `female-cover.stl`)** — half shells, roughly
 Ø139.6 mm; wall **6.35 mm**; bore r 61.75 (male) / 64.99 (female);

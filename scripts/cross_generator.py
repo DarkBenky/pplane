@@ -15,6 +15,8 @@ HOLE_CENTER_RADIUS = HOLE_SPAN / 2.0 + CHAMFER_RADIUS
 HOLE_DIAMETER = 4.0
 HOLE_DEPTH = 7.5
 CHAMFER_DEPTH = 0.5
+CENTER_HOLE_DIAMETER = 7.5
+CENTER_BOSS_DIAMETER = 18.0
 RING_RADIUS = 34.0
 RING_RADIAL_HALF = 2.0
 RING_AXIAL_HALF = 4.0
@@ -173,6 +175,18 @@ def make_ring():
     return mesh
 
 
+def make_center_boss():
+    boss = trimesh.creation.cylinder(radius=CENTER_BOSS_DIAMETER / 2.0, height=ARM_HEIGHT, sections=192)
+    boss.fix_normals()
+    return boss
+
+
+def make_center_hole_drill():
+    drill = trimesh.creation.cylinder(radius=CENTER_HOLE_DIAMETER / 2.0, height=ARM_HEIGHT + 2.0, sections=192)
+    drill.fix_normals()
+    return drill
+
+
 def make_frustum(radius_bottom, radius_top, z_bottom, z_top, sections=64):
     vertices = []
     faces = []
@@ -214,11 +228,14 @@ def make_hole_drill(x, y):
 def main():
     arms = [make_arm(theta) for theta in [0.0, np.pi / 2.0, np.pi, -np.pi / 2.0]]
     ring = make_ring()
-    cross = trimesh.boolean.union(arms + [ring], engine="manifold")
+    boss = make_center_boss()
+    cross = trimesh.boolean.union(arms + [ring, boss], engine="manifold")
+    drills = [make_center_hole_drill()]
     for theta in [0.0, np.pi / 2.0, np.pi, -np.pi / 2.0]:
         x = HOLE_CENTER_RADIUS * np.cos(theta)
         y = HOLE_CENTER_RADIUS * np.sin(theta)
-        cross = trimesh.boolean.difference([cross, make_hole_drill(x, y)], engine="manifold")
+        drills.append(make_hole_drill(x, y))
+    cross = trimesh.boolean.difference([cross] + drills, engine="manifold")
     if not cross.is_watertight:
         raise RuntimeError("generated mesh is not watertight")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
