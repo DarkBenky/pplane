@@ -56,8 +56,9 @@ pins a second time).
 Bottom opening stays 12.8 mm. Watertight, ~84k triangles.
 
 **Cross (`cross_v2.stl`)** — arms 25.87 mm high, tip radius 63.25 mm,
-M3 heat-insert holes Ø4.0 × 7.5 mm with Ø4.8 chamfer; **hole span 39.0 mm**
-(clear gap between chamfer rims), hole centres at r 21.9 mm.
+M3 heat-insert holes **Ø4.2 × 7.5 mm** (Ø3.95 insert + 0.25 mm tolerance) with
+Ø4.8 chamfer; **hole span 39.0 mm** (clear gap between chamfer rims), hole centres
+at r 21.9 mm (motor bolt pattern).
 **Ø7.5 mm through-hole** in the centre (5 mm shaft + clearance), reinforced by a
 **Ø18 mm hub** spanning the full arm height (5.25 mm wall around the hole; the hub
 top is flush with the motor mounting face).
@@ -81,10 +82,11 @@ in CAD/slicer. Heat insert (measured kit part): body Ø3.95 × 5.92 mm, Ø2.4 bo
 0.3 mm outer / 0.2 mm bore lead-in chamfers, no flange. M3×10 socket-head screw:
 head Ø5.5 × 3.0 mm, 2.5 mm hex socket, 10 mm shank. Hex nut: 5.5 mm A/F ×
 2.4 mm. Washer: Ø7.0 × Ø3.2 × 1.0 mm. These are reference geometry only — use
-real steel hardware in the assembly. The 4.0 mm insert holes in the cross and
-test stand are a light slip fit for this 3.95 mm insert (0.05 mm clearance); if
-it feels loose after heat-setting, add a drop of CA glue or use a 3.7–3.8 mm
-hole. The test stand's Ø5.8 × 0.7 mm counterbores act as lead-ins for this
+real steel hardware in the assembly. The cross's 4.2 mm insert holes are a loose
+slip fit for this 3.95 mm insert (0.25 mm clearance, for easy heat-setting); if
+they feel too loose after heat-setting, drip in CA glue or rerun the generator
+with `M3_HOLE_CLEARANCE = 0.15`. The test stand still uses Ø4.0 mm (0.05 mm
+clearance) insert holes. The test stand's Ø5.8 × 0.7 mm counterbores act as lead-ins for this
 flangeless insert.
 
 **Battery (`models/battery/lead_acid_12v_7.2ah.stl`)** — 12 V 7.2 Ah SLA
