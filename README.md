@@ -14,11 +14,13 @@ models/
   hardware/ m3_heat_insert.stl, m3_screw_10mm.stl, m3_hex_nut.stl, m3_washer.stl
   test-stand/ motor_test_stand_base.stl, motor_test_stand_lid.stl
   battery/  lead_acid_12v_7.2ah.stl, lipo_6s_113x43x37.stl
+  buck-boost-converter/ buck_boost_case_body.stl, _lid.stl, _assembly.stl
   reference/ build_volume_256.stl, build_volume_256_frame.stl
   boat/     bow/stern foam-fill caps, thin_end_plates/ (legacy), benches
 scripts/    cross_generator.py, fix_cover_pins.py, tube_generator.py,
             hardware_generator.py, test_stand_generator.py, battery_generator.py,
             lipo_battery_generator.py, build_volume_generator.py,
+            buck_boost_case_generator.py,
             boat_bow_stern_generator.py, boat_end_cap_generator.py,
             boat_inside_split_generator.py
 backups/    pre-edit copies of the models above (not printed)
@@ -42,6 +44,7 @@ Python: `/home/user/miniconda3/bin/python` (needs `numpy`, `scipy`, `trimesh`, `
 | `scripts/battery_generator.py` | – | `models/battery/lead_acid_12v_7.2ah.stl` |
 | `scripts/lipo_battery_generator.py` | – | `models/battery/lipo_6s_113x43x37.stl` |
 | `scripts/build_volume_generator.py` | – | `models/reference/build_volume_256*.stl` |
+| `scripts/buck_boost_case_generator.py` | – | `models/buck-boost-converter/buck_boost_case_*.stl` |
 | `scripts/boat_bow_stern_generator.py` | – | `models/boat/boat_bow_stern_cap_*.stl` |
 | `scripts/boat_end_cap_generator.py` | `models/boat/boatend.stl` | `models/boat/thin_end_plates/boat_bow_stern_cap_*.stl` (legacy) |
 | `scripts/boat_inside_split_generator.py` | `models/boat/boatinside*.stl` | `models/boat/*_optimized.stl`, `models/boat/legs_inside/*.stl` |
@@ -118,6 +121,24 @@ align and seal the lid. Four Ø3.4 through-holes with Ø6 × 3 mm counterbores a
 r 75. Base ≈164 g PLA, lid ≈143 g PLA; ≈1.02 kg with sand. Motor screws
 M3 × 8; base screws M3 × 10.
 
+**Buck-boost converter case (`models/buck-boost-converter/`)** — body + lid from
+the supplied drawing. Outer **79.7 × 54 × 44 mm** (2 mm floor + 40 mm inside +
+2 mm lid), walls and floor **2 mm**, inside **75.7 × 50 × 40 mm**. The **front
+is completely open** (75.7 × 40) so the converter slides in and its terminals
+stay accessible; the top is closed by a **2 mm plate with a 3 mm locating lip**
+(lip 75.3 × 49.6 mm, 0.2 mm clearance per side — glue or tape it down). A
+**24 × 35 mm window** in the floor is centred, 15 mm behind the inside front face
+and flush with the inside back face (heatsink/connector pass-through). **Four
+flared feet** (10 mm at the top → **14 mm at the bottom**, 9 mm tall) spread the
+load out instead of in: their bottom faces are flush with the case outline, so
+the standing footprint is still exactly 79.7 × 54 mm but the contact area is
+4 × 14 × 14 = **784 mm²** (vs 196 mm² for an inward taper) — the case no longer
+rocks or tips when the converter is pulled out through the open front. Body
+≈33.4 g, lid ≈12.5 g PLA. Front is at −Y, feet down.
+Tune `LID_CLEARANCE` (lid fit), `FOOT_BOTTOM` (stability) or `FOOT_OVERHANG`
+(let the pads stick out past the outline) in
+`scripts/buck_boost_case_generator.py`.
+
 **Build volume (`models/reference/`)** — 256 × 256 × 256 mm envelope for a
 256 mm-class printer. `build_volume_256.stl` is the solid cube;
 `build_volume_256_frame.stl` is a 12-edge cage with 3 mm square beams inside the
@@ -159,6 +180,14 @@ Details in `models/boat/README.md`.
 * Test-stand base: print upright as modeled, no supports. Test-stand lid: print
   **flipped** (motor face on the bed, bosses up); the Ø16 × 2.5 mm center pocket
   bridges at 2.5 mm — fine on most printers, or drill it out afterwards.
+* Buck-boost case body: print **upside down** (open top on the bed, feet up),
+  with a brim — the first layer is only the 2 mm top rim. The only bridging is
+  the 2 mm floor, which is supported on the left, right and back walls (a 75.7 mm
+  bridge); 3 perimeters and 4 top layers handle it. Printing it feet-down would
+  put the whole floor in mid-air, so don't. The flared feet become a 2 mm / 12.5°
+  overhang at the very top of the print, which needs no support.
+  The lid prints plate-down with the lip up — **flip it over in the slicer** (as
+  exported the lip is on the bed, which leaves the 2.2 mm plate rim overhanging).
 * Fill the test-stand cavity with dry sand (or lead shot for more mass) before
   screwing the lid down. A plastic bag liner keeps sand contained and dry.
 * Fan blades are thin (median ~0.8 mm, some edges ~0.3 mm). SLM in AlSi10Mg is
